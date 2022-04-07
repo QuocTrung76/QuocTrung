@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %} News Archive {% endblock %}
+
+{% block body %}
+<h1>This is our newsdate filtered page</h1>
+<h2>Newest for year {{year}}</h2>
+
+{% for news in article_list %}
+<h2>{{news.author}}</h2>
+<h1>{{news.title}}</h1>
+<p>{{news.description}}</p>
+<h4>{{news.pub_date}}</h4>
+{% endfor %}
+
+{% endblock %}
