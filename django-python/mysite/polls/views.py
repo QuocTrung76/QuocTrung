@@ -1,3 +1,5 @@
+from curses.ascii import HT
+import re
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 from django.urls import reverse
@@ -6,7 +8,10 @@ from rest_framework.parsers import JSONParser
 from .models import Question, Choice
 from django.utils import timezone
 from .serializers import QuestionSerializers
-
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
 """
 class IndexView(generic.ListView):
     template_name = 'polls/index.html'
@@ -46,20 +51,45 @@ def vote(request, question_id):
         return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
     """
 # Create your views here.
-
+@api_view(['GET','POST'])
 def question_list(request):
 
     if request.method=='GET':
         template_name = 'polls/question_text.html'
         question_text=Question.objects.all()
         serializer=QuestionSerializers(question_text, many=True)
-        return JsonResponse(serializer.data,safe=False)
+        return Response(serializer.data)
     elif request.method=='POST':
         template_name = 'polls/question_text.html'
-        data=JSONParser().parse(request)
-        serializer=QuestionSerializers(data=data)
+        #data=JSONParser().parse(request)
+        serializer=QuestionSerializers(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data,status=201)
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET','PUT','DELETE'])
+def question_detail(request,pk):
+    try:
+        question=Question.objects.get(pk=pk)
+    except Question.DoesNotExist:
+        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
+
+    if request.method=='GET':
+        serializer=QuestionSerializers(question)
+        return Response(serializer.data)
+
+    elif request.method=='PUT':
+        serializer=QuestionSerializers(question,data=request.data)
+
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method=='DELETE':
+        question.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
