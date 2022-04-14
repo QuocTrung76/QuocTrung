@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Question
+from .models import Question, Choice
 
 """
 Serializer
@@ -26,5 +26,11 @@ ModelSerializer
 class QuestionSerializers(serializers.ModelSerializer):
     class Meta:
         model=Question
+        #fields=['pub_date','question_text']
+        fields='__all__'
+
+class ChoiceSerializers(serializers.ModelSerializer):
+    class Meta:
+        model=Choice
         #fields=['pub_date','question_text']
         fields='__all__'
