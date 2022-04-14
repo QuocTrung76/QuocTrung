@@ -92,23 +92,6 @@ def question_detail(request,pk):
         question.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-@api_view(['GET','POST'])
-def choie_list(request):
-    question = get_object_or_404(Question, pk=question_id)
-    if request.method=='GET':
-        template_name = 'polls/choice.html'
-        choice=Question.objects.all()
-        serializer=QuestionSerializers(question_text, many=True)
-        return Response(serializer.data)
-    elif request.method=='POST':
-        template_name = 'polls/question_text.html'
-        #data=JSONParser().parse(request)
-        serializer=QuestionSerializers(data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data,status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET','PUT','DELETE'])
 def question_detail(request,pk):
@@ -132,6 +115,30 @@ def question_detail(request,pk):
     elif request.method=='DELETE':
         question.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class DetailView(generic.DetailView):
+    
+    @api_view(['GET','POST'])
+    
+    def choie_list(request):
+        model = Question
+        template_name = 'polls/detail.html'
+        question = get_object_or_404(Question, pk=question_id)
+        if request.method=='GET':
+            choice=Question.objects.all()
+            serializer=ChoiceSerializers(choice, many=True)
+            return Response(serializer.data)
+        elif request.method=='POST':
+            template_name = 'polls/question_text.html'
+            #data=JSONParser().parse(request)
+            serializer=ChoiceSerializers(data=request.data)
+
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data,status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        #def get_queryset(self):
+            #return Question.objects.filter(pub_date__lte=timezone.now())
 
 
 def vote(request, question_id):
