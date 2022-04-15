@@ -23,14 +23,15 @@ Serializer
 """
 ModelSerializer
 """
-class QuestionSerializers(serializers.ModelSerializer):
-    class Meta:
-        model=Question
-        #fields=['pub_date','question_text']
-        fields='__all__'
+class ChoiceSerializer(serializers.Serializer):
+    choice_text=serializers.CharField(max_length=200)
 
-class ChoiceSerializers(serializers.ModelSerializer):
-    class Meta:
-        model=Choice
-        #fields=['pub_date','question_text']
-        fields='__all__'
+    def create(self, validated_data):
+        return Choice.objects.create(**validated_data)
+class QuestionSerializer(serializers.Serializer):
+    question_text=serializers.CharField(max_length=200)
+    pub_date=serializers.DateTimeField()
+    choices=ChoiceSerializer(many=True, read_only=True)
+    def craete(self, validate_data):
+        return Question.objects.create(**validated_data)
+

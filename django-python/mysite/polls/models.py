@@ -18,6 +18,11 @@ class Question(models.Model):
         now = timezone.now()
         return now - datetime.timedelta(days=1) <= self.pub_date <= now
 
+    def choices(self):
+        if not hasattr(self, '_choices'):
+            self._choices=self.choice_set.all()
+        return self._choices
+
 
 class Choice(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE)

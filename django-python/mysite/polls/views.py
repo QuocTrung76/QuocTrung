@@ -7,7 +7,7 @@ from django.views import generic
 from rest_framework.parsers import JSONParser
 from .models import Question, Choice
 from django.utils import timezone
-from .serializers import QuestionSerializers
+from .serializers import QuestionSerializer, ChoiceSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -57,12 +57,12 @@ def question_list(request):
     if request.method=='GET':
         template_name = 'polls/question_text.html'
         question_text=Question.objects.all()
-        serializer=QuestionSerializers(question_text, many=True)
+        serializer=QuestionSerializer(question_text, many=True)
         return Response(serializer.data)
     elif request.method=='POST':
         template_name = 'polls/question_text.html'
         #data=JSONParser().parse(request)
-        serializer=QuestionSerializers(data=request.data)
+        serializer=QuestionSerializer(data=request.data)
 
         if serializer.is_valid():
             serializer.save()
@@ -91,54 +91,25 @@ def question_detail(request,pk):
     elif request.method=='DELETE':
         question.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET','PUT','DELETE'])
-def question_detail(request,pk):
-    try:
-        question=Question.objects.get(pk=pk)
-    except Question.DoesNotExist:
-        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
-
-    if request.method=='GET':
-        serializer=QuestionSerializers(question)
+        
+@api_view(['POST'])
+def choices_view(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    serializer = ChoiceSerializer(data=request.data)
+    if serializer.is_valid():
+        choice = serializer.save(question=question)
+        return Response(ChoiceSerializer(choice).data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['GET', 'PATCH', 'DELETE'])
+def question_detail_view(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    if request.method == 'GET':
+        serializer = QuestionSerializer(question)
         return Response(serializer.data)
-
-    elif request.method=='PUT':
-        serializer=QuestionSerializers(question,data=request.data)
-
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    elif request.method=='DELETE':
-        question.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-class DetailView(generic.DetailView):
-    
-    @api_view(['GET','POST'])
-    
-    def choie_list(request):
-        model = Question
-        template_name = 'polls/detail.html'
-        question = get_object_or_404(Question, pk=question_id)
-        if request.method=='GET':
-            choice=Question.objects.all()
-            serializer=ChoiceSerializers(choice, many=True)
-            return Response(serializer.data)
-        elif request.method=='POST':
-            template_name = 'polls/question_text.html'
-            #data=JSONParser().parse(request)
-            serializer=ChoiceSerializers(data=request.data)
-
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data,status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        #def get_queryset(self):
-            #return Question.objects.filter(pub_date__lte=timezone.now())
+    elif request.method == 'PATCH':
+        raise NotImplementedError("PATCH currently not supported")
+    elif request.method == 'DELETE':
+        raise NotImplementedError("DELETE currently not supported")
 
 
 def vote(request, question_id):
