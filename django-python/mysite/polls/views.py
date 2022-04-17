@@ -7,7 +7,7 @@ from django.views import generic
 from rest_framework.parsers import JSONParser
 from .models import Question, Choice
 from django.utils import timezone
-from .serializers import QuestionSerializer, ChoiceSerializer
+from .serializers import QuestionSerializer, ChoiceSerializer, VoteSerializer, QuestionResultPageSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -77,11 +77,11 @@ def question_detail(request,pk):
         return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
     if request.method=='GET':
-        serializer=QuestionSerializers(question)
+        serializer=QuestionSerializer(question)
         return Response(serializer.data)
 
     elif request.method=='PUT':
-        serializer=QuestionSerializers(question,data=request.data)
+        serializer=QuestionSerializer(question,data=request.data)
 
         if serializer.is_valid():
             serializer.save()
@@ -112,22 +112,21 @@ def question_detail_view(request, question_id):
         raise NotImplementedError("DELETE currently not supported")
 
 
-def vote(request, question_id):
+@api_view(['PATCH'])
+def vote_view(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
-    try:
-        selected_choice = question.choice_set.get(pk=request.POST['choice'])
-    except (KeyError, Choice.DoesNotExist):
-        # Redisplay the question voting form.
-        return render(request, 'polls/detail.html', {
-            'question': question,
-            'error_message': "You didn't select a choice.",
-        })
-    else:
-        selected_choice.votes += 1
-        selected_choice.save()
-        # Always return an HttpResponseRedirect after successfully dealing
-        # with POST data. This prevents data from being posted twice if a
-        # user hits the Back button.
-        return HttpResponseRedirect(reverse('polls:results', args=(question.id,)))
+    serializer = VoteSerializer(data=request.data)
+    if serializer.is_valid():
+        choice = get_object_or_404(Choice, pk=serializer.validated_data['choice_id'], question=question)
+        choice.votes += 1
+        choice.save()
+        return Response("Voted")
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def question_result_view(request, question_id):
+    question = get_object_or_404(Question, pk=question_id)
+    serializer = QuestionResultPageSerializer(question)
+    return Response(serializer.data)
 
 
